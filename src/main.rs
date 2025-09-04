@@ -5,7 +5,8 @@ mod editor;
 use crate::editor::Mode;
 use editor::Editor;
 use ratatui::{
-    layout::{Constraint, Layout, Position},
+    layout::{Constraint, Direction, Layout, Position},
+    style::{Color, Style, Stylize},
     text::{Line, Span, Text},
     widgets::{Block, Paragraph},
     DefaultTerminal, Frame,
@@ -30,6 +31,7 @@ impl App {
     }
 
     pub fn run(&mut self, mut terminal: DefaultTerminal) -> Result<(), Box<dyn std::error::Error>> {
+        let _ = terminal.clear();
         loop {
             terminal.draw(|frame| self.draw(frame))?;
             self.editor.run();
@@ -37,13 +39,23 @@ impl App {
     }
 
     fn draw(&self, frame: &mut Frame) {
-        //let layout = Layout::default();
         //use frame.area() to use the whole terminal
-        let line: String = self.editor.buffer.iter().collect();
-        let output = match self.editor.mode {
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Percentage(5),
+                Constraint::Percentage(90),
+                Constraint::Percentage(5),
+            ])
+            .split(frame.area());
+        let line: String = self.editor.get_line_from_buffer();
+        let mode = match self.editor.mode {
             Mode::Normal => "Normal".to_string(),
             Mode::Editing => "Editing".to_string(),
         };
-        frame.render_widget(Paragraph::new(line), frame.area())
+        let file_path = self.editor.file_path.clone();
+        frame.render_widget(Paragraph::new(file_path).centered(), layout[0]);
+        frame.render_widget(Paragraph::new(line).block(Block::bordered()), layout[1]);
+        frame.render_widget(Paragraph::new(mode), layout[2]);
     }
 }
